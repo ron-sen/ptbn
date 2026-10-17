@@ -31,3 +31,4 @@ Backend/celerybeat-schedule
 
 # Generated chart outputs
 Backend/scripts/charts/
+
