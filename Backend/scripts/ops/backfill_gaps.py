@@ -1,4 +1,4 @@
-# scripts/gap_check.py
+# scripts/ops/backfill_gaps.py
 import asyncio
 from app.db.connection import get_celery_sessionmaker
 from app.ml.ml_models.dataset import build_training_dataset
