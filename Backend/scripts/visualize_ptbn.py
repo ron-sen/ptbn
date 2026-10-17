@@ -1,11 +1,4 @@
-"""
-PTBN Visualization Suite
-Generates all key charts for RSI, PPO, ATR%, LR, RF analysis using Seaborn + Matplotlib.
-Run from Backend/ with:
-    $env:DATABASE_URL="postgresql+asyncpg://postgres:sentrix123@localhost:5433/sentrix"
-    $env:PYTHONPATH="."
-    poetry run python scripts/visualize_ptbn.py
-"""
+
 
 import asyncio
 import os

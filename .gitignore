@@ -23,7 +23,8 @@ venv/
 .mypy_cache/
 
 # MySQL db
-sentrix_backup.sql
+*_backup.sql
+*.dump
 
 # Celery beat schedule
 celerybeat-schedule

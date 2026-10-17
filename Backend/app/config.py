@@ -4,7 +4,7 @@ from  dotenv import load_dotenv
 load_dotenv()
 class Settings:
 
-    PROJECT_NAME : str = "Sentrix"
+    PROJECT_NAME : str = "PTBN"
 
     SECRET_KEY : str = os.getenv("SECRET_KEY" , "temporary_low_security_key")
     ALGORITHM : str = os.getenv("ALGORITHM" , "HS256")
