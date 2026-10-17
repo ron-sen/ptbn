@@ -32,3 +32,6 @@ Backend/celerybeat-schedule
 # Generated chart outputs
 Backend/scripts/charts/
 
+# WIP, not published yet
+frontend/
+frontend_reflex/
