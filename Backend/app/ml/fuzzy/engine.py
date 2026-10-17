@@ -132,17 +132,28 @@ def compute_suitability(
     """Runs the FIS on current values, returns crisp suitability score."""
     sim = get_or_build_fis(asset_id, rsi_history, ppo_history, atr_pct_history)
 
-    sim.input["rsi"] = float(np.clip(current_rsi, 0, 100))
-    sim.input["ppo"] = float(np.clip(current_ppo, ppo_history.min(), ppo_history.max()))
-    sim.input["atr"] = float(np.clip(current_atr_pct, atr_pct_history.min(), atr_pct_history.max()))
+    rsi_in = float(np.clip(current_rsi, 0, 100))
+    ppo_in = float(np.clip(current_ppo, ppo_history.min(), ppo_history.max()))
+    atr_in = float(np.clip(current_atr_pct, atr_pct_history.min(), atr_pct_history.max()))
 
-    """
-    print(f"DEBUG asset={asset_id} rsi={current_rsi} ppo={current_ppo} atr={current_atr_pct}")
-    print(f"DEBUG ppo_range=({ppo_history.min()}, {ppo_history.max()}) atr_range=({atr_pct_history.min()}, {atr_pct_history.max()})")
-    """
-    
-    logger.debug(f"Asset={asset_id} RSI={current_rsi:.2f} PPO={current_ppo:.2f} ATR_PCT={current_atr_pct:.2f}%")
+    if not all(np.isfinite(v) for v in (rsi_in, ppo_in, atr_in)):
+        raise ValueError(
+            f"Non-finite FIS input for asset {asset_id}: "
+            f"rsi={current_rsi}, ppo={current_ppo}, atr_pct={current_atr_pct}"
+        )
+
+    sim.input["rsi"] = rsi_in
+    sim.input["ppo"] = ppo_in
+    sim.input["atr"] = atr_in
+
+    logger.debug(f"Asset={asset_id} RSI={rsi_in:.2f} PPO={ppo_in:.2f} ATR_PCT={atr_in:.2f}%")
     sim.compute()
+
+    if "suitability" not in sim.output:
+        raise ValueError(
+            f"FIS produced no output for asset {asset_id}: "
+            f"rsi={rsi_in}, ppo={ppo_in}, atr={atr_in}"
+        )
     score = float(sim.output["suitability"])
 
     return {"suitability_score": round(score, 2)}
