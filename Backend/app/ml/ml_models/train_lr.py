@@ -10,11 +10,12 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.preprocessing import StandardScaler #  after improvision
+from app.ml.ml_models.dataset import N_CANDLES_AHEAD
 
 FEATURE_COLUMNS = [ "rsi" , "ppo" , "atr_pct"]
 N_SPLITS = 5 
 
-def train_lr_walk_forward( df : pd.DataFrame) -> list[dict[str , Any]] :
+def train_lr_walk_forward( df : pd.DataFrame , gap : int = N_CANDLES_AHEAD , class_weight = "balanced") -> list[dict[str , Any]] :
 
     """
     df must be sorted chronologically , containing FEATURE_COLUMNS + 'label'. 
@@ -26,7 +27,7 @@ def train_lr_walk_forward( df : pd.DataFrame) -> list[dict[str , Any]] :
     X = df[FEATURE_COLUMNS].values
     y = df["label"].values
 
-    tscv = TimeSeriesSplit(n_splits=N_SPLITS)
+    tscv = TimeSeriesSplit(n_splits=N_SPLITS , gap=gap)
     fold_results = []
 
     for fold_index , (train_idx , test_idx) in enumerate(tscv.split(X)):
@@ -41,7 +42,7 @@ def train_lr_walk_forward( df : pd.DataFrame) -> list[dict[str , Any]] :
         X_test_scaled = scaler.transform(X_test)
 
 
-        model = LogisticRegression(max_iter= 1000 , class_weight= "balanced")
+        model = LogisticRegression(max_iter= 1000 , class_weight= class_weight)
         model.fit(X_train_scaled , y_train)
 
         predicted_probabilities = model.predict_proba(X_test_scaled)[ : , 1]

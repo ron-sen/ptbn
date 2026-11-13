@@ -9,18 +9,19 @@ import numpy as np
 import  pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import TimeSeriesSplit
+from app.ml.ml_models.dataset import N_CANDLES_AHEAD
 
 FEATURE_COLUMNS =  [ "rsi" , "ppo" , "atr_pct"]
 N_SPLITS = 5 
 N_ESTIMATORS = 200 
 MAX_DEPTH = 5 # kept it  shallow deliberately 
 
-def train_rf_walk_forward(df: pd.DataFrame) -> list[dict[str , Any]]:
+def train_rf_walk_forward(df: pd.DataFrame , gap : int = N_CANDLES_AHEAD) -> list[dict[str , Any]]:
 
     X = df[FEATURE_COLUMNS].values
     y = df["label"].values
 
-    tscv = TimeSeriesSplit(n_splits= N_SPLITS)
+    tscv = TimeSeriesSplit(n_splits= N_SPLITS , gap=gap)
     fold_results = []
 
     for fold_index , ( train_idx , test_idx) in enumerate(tscv.split(X)):
