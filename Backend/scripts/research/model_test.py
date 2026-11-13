@@ -42,23 +42,18 @@ ppo = pd.Series(
     np.random.uniform(-2, 2, N)
 )
 
-# test labeling function
-labels = compute_forward_return_label(
-    close=close,
-    atr=atr,
-    n_candles_ahead=10,
-    atr_multiplier=1.0,
-)
+# test labeling function and dataframe 
+raw = pd.DataFrame({"timestamp": timestamps, "close": close, "atr": atr})
+labels = compute_forward_return_label(raw, n_candles_ahead=10, atr_multiplier=1.0)
 
-
-# build dataframe expected by LR
 df = pd.DataFrame({
     "timestamp": timestamps,
     "rsi": rsi,
     "ppo": ppo,
-    "atr": atr,
+    "atr_pct": atr / close * 100.0,
     "label": labels,
 })
+
 
 
 # Remove rows where label is NaN
