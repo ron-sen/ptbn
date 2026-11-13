@@ -1,23 +1,24 @@
-services:
+name: ptbn
 
+services:
   timescaledb:
     image: timescale/timescaledb:latest-pg16
-    container_name: sentrix-timescale
+    container_name: ptbn-timescale
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: sentrix123
-      POSTGRES_DB: sentrix
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-sentrix}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - timescale_data:/var/lib/postgresql/data
     restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    container_name: sentrix-redis
+    container_name: ptbn-redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     restart: unless-stopped
@@ -26,14 +27,11 @@ services:
     build:
       context: .
       dockerfile: Backend/Dockerfile
-    container_name: sentrix-backend
-    env_file:
-      - .env
+    container_name: ptbn-backend
+    env_file: [.env]
     ports:
       - "8000:8000"
-    depends_on:
-      - timescaledb
-      - redis
+    depends_on: [timescaledb, redis]
     volumes:
       - ./Backend:/app
     restart: unless-stopped
@@ -42,13 +40,10 @@ services:
     build:
       context: .
       dockerfile: Backend/Dockerfile
-    container_name: sentrix-celery-worker
+    container_name: ptbn-celery-worker
     command: celery -A app.celery_app worker --loglevel=info
-    env_file:
-      - .env
-    depends_on:
-      - timescaledb
-      - redis
+    env_file: [.env]
+    depends_on: [timescaledb, redis]
     volumes:
       - ./Backend:/app
     restart: unless-stopped
@@ -57,27 +52,24 @@ services:
     build:
       context: .
       dockerfile: Backend/Dockerfile
-    container_name: sentrix-celery-beat
+    container_name: ptbn-celery-beat
     command: celery -A app.celery_app beat --loglevel=info
-    env_file:
-      - .env
-    depends_on:
-      - timescaledb
-      - redis
+    env_file: [.env]
+    depends_on: [timescaledb, redis]
     volumes:
       - ./Backend:/app
     restart: unless-stopped
 
   frontend:
+    profiles: ["frontend"]
     build: ./frontend
+    container_name: ptbn-frontend
     ports:
       - "3000:80"
-    depends_on:
-      - backend
-    networks:
-      - default
-    restart : unless-stopped
+    depends_on: [backend]
+    restart: unless-stopped
 
 volumes:
   timescale_data:
+    name: sentrixio_timescale_data
   redis_data:

@@ -1,4 +1,4 @@
-# scripts/fuzzytest.py
+# scripts/smoke/smoke_fuzzy.py
 import numpy as np
 import pandas as pd
 from app.ml.fuzzy.engine import compute_suitability

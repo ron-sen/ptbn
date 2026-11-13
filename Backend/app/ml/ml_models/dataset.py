@@ -14,6 +14,7 @@ from app.models.portfolio_auth import MarketPriceCandles
 
 N_CANDLES_AHEAD = 15  # increased after improvision
 ATR_MULTIPLIER = 1.0
+HOLDOUT_FRAC = 0.2
 
 async def build_training_dataset(
         db : AsyncSession , 
@@ -77,3 +78,20 @@ async def build_training_dataset(
     else:
         # return full columns so ablation can recompute label with different N/k
         return merged[["timestamp", "rsi", "ppo", "atr", "atr_pct", "close"]]
+
+
+
+# i need to study this function 
+async def split_dev_holdout(df : pd.DataFrame , n_candles_ahead : int = N_CANDLES_AHEAD, holdout_frac :float = HOLDOUT_FRAC):
+    """
+    chronological split of an already labelled df.
+    dev = everything before the cut , minus the last N rows(their labels look  into the holdout)
+    holdout = the final slice , touched once at the very end
+    """
+
+    cut = int(len(df) * ( 1 - holdout_frac))
+    dev = df.iloc[: cut - n_candles_ahead].copy()
+    holdout = df.iloc[cut:].copy()
+    return dev , holdout
+
+

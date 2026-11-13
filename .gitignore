@@ -23,7 +23,8 @@ venv/
 .mypy_cache/
 
 # MySQL db
-sentrix_backup.sql
+*_backup.sql
+*.dump
 
 # Celery beat schedule
 celerybeat-schedule
@@ -31,3 +32,7 @@ Backend/celerybeat-schedule
 
 # Generated chart outputs
 Backend/scripts/charts/
+
+# WIP, not published yet
+frontend/
+frontend_reflex/

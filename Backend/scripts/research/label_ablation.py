@@ -21,6 +21,8 @@ from app.ml.ml_models.evalute_lr import evaluate_fold
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.preprocessing import StandardScaler
+from app.ml.ml_models.dataset import build_training_dataset, HOLDOUT_FRAC
+from app.ml.ml_models.significance import block_bootstrap_auc_ci, circular_shift_pvalue
 
 warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
@@ -40,6 +42,8 @@ async def run_ablation():
         await engine.dispose()
 
     if base_df.empty or len(base_df) < 100:
+        cut = int(len(base_df)* (1 - HOLDOUT_FRAC))
+        dev_base = base_df.iloc[:cut].reset_index(drop = True)
         print(f"Not enough data ({len(base_df)} rows). Aborting.")
         return
 
@@ -51,7 +55,7 @@ async def run_ablation():
     for n_candles, atr_mult in product(N_CANDLES_OPTIONS, ATR_MULT_OPTIONS):
 
         # recompute label for this (N, k) combination
-        df = base_df.copy()
+        df = dev_base.copy()
         df["label"] = compute_forward_return_label(
             df=df,
             n_candles_ahead=n_candles,
@@ -70,7 +74,7 @@ async def run_ablation():
         X = df[FEATURE_COLUMNS].values
         y = df["label"].values
 
-        tscv = TimeSeriesSplit(n_splits=N_SPLITS)
+        tscv = TimeSeriesSplit(n_splits=N_SPLITS , gap= n_candles)
         fold_aucs = []
 
         for train_idx, test_idx in tscv.split(X):
@@ -139,6 +143,36 @@ async def run_ablation():
     print(f"\nBest combination: N={int(best['n_candles'])} candles, "
           f"k={best['atr_mult']} ATR multiplier "
           f"→ mean ROC-AUC = {best['mean_roc_auc']}")
+
+    # one shot holdout evaluation of the winner 
+
+    n_best , k_best = int(best["n_candles"]) , float(best["atr_mult"])
+    lab = compute_forward_return_label(
+        base_df , n_candles_ahead= n_best , atr_multiplier= k_best
+    ).values
+
+    pos = np.arange(len(base_df))
+    tr = (pos < cut - n_best) & ~np.isnan(lab)
+    te = (pos >= cut) & ~np.isnan(lab)
+
+    x_all = base_df[FEATURE_COLUMNS].values
+    scaler = StandardScaler().fit(x_all[tr])
+    model = LogisticRegression(max_iter=1000 , class_weight="balanced").fit(
+        scaler.transform(x_all[tr] ), lab[tr].astype(int)
+    )
+
+    proba = model.predict_proba(scaler.transform(x_all(te)))[:,1]
+    y_te = lab[te].astype(int)
+
+    auc , lo , hi = block_bootstrap_auc_ci(y_te, proba , block = n_best)
+    p = circular_shift_pvalue(y_te , proba)
+
+    print(f"\nHOLDOUT (N={n_best}, k={k_best}): AUC={auc:.4f}  "
+          f"95% CI [{lo:.4f}, {hi:.4f}]  p={p:.3f}")
+
+    """
+    If the dev AUC is above 0.5 and the holdout AUC drops back to about 0.5, the ablation winner was noise. That is the finding you’re testing for.
+    """
     print("\nFold-by-fold AUCs for best combination:", best["fold_aucs"])
 
 
